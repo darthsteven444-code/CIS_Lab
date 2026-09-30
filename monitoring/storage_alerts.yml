@@ -1,0 +1,38 @@
+groups:
+  - name: storage_health
+    interval: 60s
+    rules:
+      - alert: ZpoolNotHealthy
+        expr: zpool_healthy == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Pool {{ $labels.pool }} on {{ $labels.host }} is not ONLINE"
+
+      - alert: DriveTemperatureHigh
+        expr: smartmon_temperature_celsius_raw_value > 45
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.disk }} at {{ $value }} C"
+          description: "Sustained above 45 C. August's fault happened at 51 to 56 C with the chassis fans at 40 percent."
+
+      - alert: DriveTemperatureCritical
+        expr: smartmon_temperature_celsius_raw_value > 50
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.disk }} at {{ $value }} C"
+          description: "This is the range that faulted sdf in August. Check airflow now. Cross reference smartmon_device_info for the serial before pulling anything."
+
+      - alert: SmartMetricsMissing
+        expr: absent(smartmon_temperature_celsius_raw_value)
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "SMART metrics have stopped arriving from the hypervisor"
+          description: "The smartmon timer is not writing. Monitoring that stops reporting looks identical to everything being fine."

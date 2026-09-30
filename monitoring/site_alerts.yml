@@ -1,0 +1,39 @@
+groups:
+  - name: site_uptime
+    interval: 30s
+    rules:
+      - alert: SiteDown
+        expr: probe_success{job="blackbox_http"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Site down: {{ $labels.instance }}"
+          description: "{{ $labels.instance }} has been unreachable for more than 2 minutes."
+
+      - alert: SiteSlow
+        expr: probe_duration_seconds{job="blackbox_http"} > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow response: {{ $labels.instance }}"
+          description: "{{ $labels.instance }} has been responding in over 2 seconds for 5+ minutes."
+
+      - alert: CertExpiringSoon
+        expr: probe_ssl_earliest_cert_expiry{job="blackbox_http"} - time() < 86400 * 14
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "TLS cert expiring soon: {{ $labels.instance }}"
+          description: "{{ $labels.instance }} TLS certificate expires in less than 14 days."
+
+      - alert: CertExpired
+        expr: probe_ssl_earliest_cert_expiry{job="blackbox_http"} - time() < 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "TLS cert EXPIRED: {{ $labels.instance }}"
+          description: "{{ $labels.instance }} TLS certificate has expired."

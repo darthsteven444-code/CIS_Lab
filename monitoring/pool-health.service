@@ -1,0 +1,6 @@
+[Unit]
+Description=Export zpool health for both pools to node_exporter
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/pool-health.sh

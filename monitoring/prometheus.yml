@@ -1,0 +1,73 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'homelab'
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['localhost:9093']
+
+rule_files:
+  - "rules/*.yml"
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          hostname: 'mon01'
+
+  - job_name: 'node'
+    static_configs:
+      - targets: ['localhost:9100']
+        labels:
+          hostname: 'mon01'
+      - targets: ['192.168.1.2:9100']
+        labels:
+          hostname: 'proxmox-home'
+      - targets: ['192.168.1.104:9100']
+        labels:
+          hostname: 'casaos'
+      - targets: ['192.168.20.30:9100']
+        labels:
+          hostname: 'linux-lab'
+      - targets: ['192.168.20.114:9100']
+        labels:
+          hostname: 'ai01'
+          expected_down: 'true'
+      - targets: ['192.168.40.50:9100']
+        labels:
+          hostname: 'kali'
+          expected_down: 'true'
+      # truenas 192.168.20.50:9100 needs a node_exporter app deployed first
+
+  - job_name: 'opnsense-fw01'
+    static_configs:
+      - targets: ['192.168.20.1:9100']
+        labels:
+          hostname: 'opnsense'
+
+  - job_name: 'windows'
+    static_configs:
+      - targets: ['192.168.20.10:9182']
+        labels:
+          hostname: 'dc01'
+
+  - job_name: 'blackbox_http'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - https://steven-garcia.dev/
+          - https://www.steven-garcia.dev/
+          - https://steven-garcia.dev/projects/homelab/
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: localhost:9115

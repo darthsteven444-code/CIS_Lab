@@ -1,0 +1,48 @@
+groups:
+  - name: node_health
+    interval: 30s
+    rules:
+      - alert: HostProcessesBlocked
+        expr: node_procs_blocked > 5
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Blocked processes piling up on {{ $labels.hostname }}"
+          description: "{{ $value }} processes stuck in uninterruptible sleep for 10 minutes. This is usually a hung network filesystem, not a busy disk. Check dmesg, not iostat."
+
+      - alert: InstanceDown
+        expr: up{expected_down!="true"} == 0
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Target down: {{ $labels.hostname }}"
+          description: "{{ $labels.job }} target {{ $labels.instance }} has not answered for 3 minutes."
+
+      - alert: HostLoadWithIdleCPU
+        expr: node_load5 > 20 and on(instance) (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) > 0.8)
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Load without CPU use on {{ $labels.hostname }}"
+          description: "Load average {{ $value }} while the CPU sits idle. Processes are blocked on something, not computing."
+
+      - alert: HostDiskFilling
+        expr: (node_filesystem_avail_bytes{fstype!~"tmpfs|squashfs|overlay|ramfs"} / node_filesystem_size_bytes) * 100 < 10
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disk low on {{ $labels.hostname }} at {{ $labels.mountpoint }}"
+          description: "{{ $value | printf \"%.1f\" }} percent free."
+
+      - alert: HostMemoryLow
+        expr: (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 < 10
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Memory low on {{ $labels.hostname }}"
+          description: "{{ $value | printf \"%.1f\" }} percent of memory available."
